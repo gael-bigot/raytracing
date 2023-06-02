@@ -9,6 +9,14 @@ double length(vector v){
     return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
 }
 
+vector vector_sum(vector u, vector v){
+    vector res;
+    res.x = u.x + v.x;
+    res.y = u.y + v.y;
+    res.z = u.z + v.z;
+    return res;
+}
+
 vector vector_diff(vector u, vector v){
     vector res;
     res.x = u.x - v.x;
@@ -30,6 +38,10 @@ vector normalize(vector v){
     return res;
 }
 
+vector scal_product(vector v, double a){
+    return (vector) {v.x*a, v.y*a, v.z*a};
+}
+
 double dot_product(vector u, vector v){
     return u.x * v.x + u.y * v.y + u.z * v.z;
 }
@@ -39,6 +51,18 @@ vector cross_product(vector u, vector v){
     res.x = u.y * v.z - u.z * v.y;
     res.y = v.x * u.z - v.z * u.x;
     res.z = u.x * v.y - u.y * v.x;
+    return res;
+}
+
+vector random_vect(){
+    vector res;
+    /* la génération d'un vecteur aléatoire se fait en choisissant les deux angles
+    le caractérisant en coordonnées polaires de manière uniforme */
+    double theta = (double) rand() / RAND_MAX * 2 * M_PI;
+    double phi = (double) rand() / RAND_MAX * M_PI;
+    res.x = sin(phi)*cos(theta);
+    res.y = sin(phi)*sin(theta);
+    res.z = cos(phi);
     return res;
 }
 
@@ -106,7 +130,8 @@ ray* reflect(ray* r, triangle* t){
     // on calcule la composante normale du vecteur incident
     double normal_component = dot_product(t->n, r->direction);
 
-    // on inverse la composante normale pour créer le rayon réfléchi
+    /* on inverse la composante normale pour créer le rayon réfléchi, suivant la formule
+    i = r - 2i.n */
     vector new_dir;
     new_dir.x = r->direction.x - 2*(t->n).x*normal_component;
     new_dir.y = r->direction.y - 2*(t->n).y*normal_component;
@@ -122,9 +147,7 @@ ray* reflect(ray* r, triangle* t){
     return res;
 }
 
-
-
-ray* diffuse(ray* r, triangle* t){
+ray* diffuse_solid(ray* r, triangle* t){
     vector* p = intersect(r, t);
 
     if (NULL == p){
@@ -135,21 +158,49 @@ ray* diffuse(ray* r, triangle* t){
 
     res->origin = *p;
 
-    double theta, phi;
+    vector e1, e2, e3;
 
+    /* on crée une base adaptée au plan du triangle */
+    /* le vecteur e1 est normal au triangle et pointe du cate du rayon incident */
+    if (dot_product(r->direction, t->n) < 0){
+        e1 = t->n;
+    } else {
+        e1 = (vector) {-t->n.x, -t->n.y, -t->n.z};
+    }
+    // on crée un vecteur normal à e1 grâce à un produit vectoriel avec un vecteur aléatoire
+    e2 = normalize(cross_product(e1, random_vect()));
+    // le troisième vecteur est obtenu par produit vectoriel entre les deux précédents
+    e3 = cross_product(e1, e2);
 
-    /* on génère deux angles pour créer un vecteur unitaire aléatoire
-    on utilise une méthode de Las Vegas pour que le vecteur soit du bon côté du plan du triangle */
-    do{
-        theta = (double) rand() / RAND_MAX * 2 * M_PI;
-        phi = (double) rand() / RAND_MAX * M_PI;
-        res->direction.x = sin(phi)*cos(theta);
-        res->direction.y = sin(phi)*sin(theta);
-        res->direction.z = cos(phi);
-    } while (dot_product(res->direction, r->direction) > 0);
+    double phi, theta;
 
+    // phi est choisi uniformément entre 0 et 2Pi
+    phi = (double) rand() / RAND_MAX * 2 * M_PI;
+    // theta est choisi entre 0 et PI/2 suivant la loi de Lambert
+    theta = asin((double) rand()/RAND_MAX);
+
+    res->direction = vector_sum(scal_product(e1, cos(theta)), vector_sum(scal_product(e2, cos(phi)), scal_product(e3, sin(phi))));    
     free(p);
 
     return res;
 }
 
+ray* diffuse_translucent(ray* r, triangle* t){
+    /* Code identique à diffuse_solid, à la différence que le rayon réfléchi
+    n'a pas de contrainte pour la direcion */
+    vector* p = intersect(r, t);
+
+    if (NULL == p){
+        return NULL;
+    }
+
+    ray* res = malloc(sizeof(ray));
+
+    res->origin = *p;
+
+    res->direction = random_vect();
+
+    free(p);
+
+    return res;
+}
