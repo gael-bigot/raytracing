@@ -19,8 +19,8 @@ et je n'ai pas la foi d'implémenter un système de fichiers config */
 
 
 int main(){
-    FILE* read_f = fopen("models/house1.obj", "r");
-    scene* s = load_scene(read_f, false, false);
+    FILE* read_f = fopen("models/horiz.obj", "r");
+    scene* s = load_scene(read_f);
 
     /*
     fprintf(stderr, "%lf\n", s->triangles[0].absorbtion_coeff);
@@ -35,13 +35,30 @@ int main(){
     paths[N] = NULL;
     // les rayons sont générés avec une origine placée aléatoirement dans un rectangle et une direction fixe
     for (int i=0; i<N; i++){
-        rays[i].origin = (vector) {((double) rand()/RAND_MAX - 0.5)*40, 50, (double) rand()/RAND_MAX * 40};
-        rays[i].direction = (vector) {0, -1, -1};
-        paths[i] = simulate_ray(rays+i, s, 5);
+        // mode plan
+        //rays[i].origin = (vector) {-2, ((double) rand()/RAND_MAX-0.5)*0.5, 4+((double) rand()/RAND_MAX-0.5) * 0.5};
+        //rays[i].direction = (vector) {1, 0, -1};
+        rays[i].origin = (vector) {((double) rand()/RAND_MAX-0.5)*0.5, -6, 1.75-((double) rand()/RAND_MAX) * 0.25};
+        rays[i].direction = (vector) {0, 2, -1};
+
+        /*
+        // mode sphere
+        rays[i].origin = (vector) {-2,0,2};
+        rays[i].direction = random_vect();
+        
+        // mode ponctuel
+        rays[i].origin = (vector) {-2,0,2};
+        rays[i].direction = (vector) {1, 0, -1};
+
+        */
+
+        paths[i] = simulate_ray(rays+i, s, 100);
     }
 
     FILE* write_f = fopen("renders/trajectories.obj", "w");
     paths_to_obj(write_f, paths);
+
+    // nettoyage
 
     free(rays);
     for (int i = 0; i<N; i++){

@@ -21,19 +21,9 @@ Malheureusement la position de la caméra et l'orientation de la lumière sont h
 */
 
 int main(int argc, char *argv[]){
-    // 
     assert (argc==7);
     FILE* f = fopen(argv[1], "r");
-    scene* s = load_scene(f, true, true);
-
-
-    /*
-    // donut specific
-    s->triangles[s->n_triangles-1].reflexion_coeff = 1;
-    s->triangles[s->n_triangles-1].diffusion_coeff = 0;
-    s->triangles[s->n_triangles-2].reflexion_coeff = 1;
-    s->triangles[s->n_triangles-2].diffusion_coeff = 1;
-    */
+    scene* s = load_scene(f);
 
     fclose(f);
     
@@ -45,18 +35,26 @@ int main(int argc, char *argv[]){
     double h_fov;
     sscanf(argv[4], "%lf", &h_fov);
 
-    
     // Mise en place de la caméra et du plan d'illumination
 
-    s->camera.origin = (vector) {0, 0, 10};
+    s->camera.origin = (vector) {4, 0, 0};
 
-    s->camera.direction = (vector) {0, 2, -1};
+    s->camera.direction = (vector) {-1, 0, 0};
 
-    s->lighting_direction = (vector) {0, -1, -1};
+    s->lighting_direction = (vector) {-1, 0, -1};
 
     srand(time(NULL));
 
+
+    clock_t begin = clock();
+
     uint8_t** pixels = render_scene(s, resX, resY, h_fov / 180 * M_PI, iterations, max_ref);
+
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+    fprintf(stderr, "Temps : %lf\n", time_spent);
+
 
     char* path = malloc(128*sizeof(char));
     time_t t;

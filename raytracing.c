@@ -8,7 +8,7 @@
 #include "raytracing.h"
 
 
-scene* load_scene(FILE* obj_file, bool normals, bool textures){
+scene* load_scene(FILE* obj_file){
     /* ne fonctionne qu'avec des triangles (attention le format .obj usuel accepte des quadrilatères) */
     char* buffer = malloc(1024*sizeof(char));
     int n_vertices = 0;
@@ -34,6 +34,11 @@ scene* load_scene(FILE* obj_file, bool normals, bool textures){
 
     char* ptr;
 
+    double absorbtion_coeff = 0;
+    double reflexion_coeff = 1;
+    double solid_diff_coeff = 0;
+    double trans_diff_coeff = 0;
+
     while (fgets(buffer, 1024, obj_file)){
         //On parse le fichier pour en tirer les coordonnées des points
         if (buffer[0] == 'v' && buffer[1] == ' '){
@@ -44,26 +49,21 @@ scene* load_scene(FILE* obj_file, bool normals, bool textures){
         } else if (buffer[0] == 'f'){
             // On associe les points à leurs triangles respectifs
             triangles[t_i].a = vertices[strtol(buffer+2, &ptr, 10)-1];
-            // code sale pour sauter les normales et textures encodées dans le .obj 
-            if (normals){strtol(ptr+1, &ptr, 10);}
-            if (textures){strtol(ptr+1, &ptr, 10);}
             triangles[t_i].b = vertices[strtol(ptr+1, &ptr, 10)-1];
-            if (normals){strtol(ptr+1, &ptr, 10);}
-            if (textures){strtol(ptr+1, &ptr, 10);}
             triangles[t_i].c = vertices[strtol(ptr+1, &ptr, 10)-1];
             triangles[t_i].n = normalize(cross_product(vector_diff(triangles[t_i].a, triangles[t_i].b),vector_diff(triangles[t_i].a, triangles[t_i].c)));
-            // on initialise les proporiétés optique du triangle
-            triangles[t_i].absorbtion_coeff = 0;
-            triangles[t_i].reflexion_coeff = 0;
-            triangles[t_i].solid_diff_coeff = 1;
-            triangles[t_i].trans_diff_coeff = 0;
+            // on attribue les propriétés optiques au triangle
+            triangles[t_i].absorbtion_coeff = absorbtion_coeff;
+            triangles[t_i].reflexion_coeff = reflexion_coeff;
+            triangles[t_i].solid_diff_coeff = solid_diff_coeff;
+            triangles[t_i].trans_diff_coeff = trans_diff_coeff;
             t_i++;
         } else if (buffer[0] == '#' && buffer[1] == 'p' && buffer[2] == 'p'){
-            // en cas de balise #pp on récupère les propriétés du dernier triangle
-            triangles[t_i-1].absorbtion_coeff = strtof(buffer+4, &ptr);
-            triangles[t_i-1].reflexion_coeff = strtof(ptr+1, &ptr);
-            triangles[t_i-1].solid_diff_coeff = strtof(ptr+1, &ptr);
-            triangles[t_i-1].trans_diff_coeff = strtof(ptr+1, &ptr);
+            // en cas de balise #pp on modifie les propriétées du matériaux
+            absorbtion_coeff = strtof(buffer+4, &ptr);
+            reflexion_coeff = strtof(ptr+1, &ptr);
+            solid_diff_coeff = strtof(ptr+1, &ptr);
+            trans_diff_coeff = strtof(ptr+1, &ptr);
         }
     }
     scene* s = malloc(sizeof(scene));
@@ -221,7 +221,7 @@ uint8_t** render_scene(scene* s, int width, int height, double horizontal_fov, i
     // Génération du bitmap ligne par ligne
     for (int i = 0; i < height; i++){
         pixels[i] = malloc(width * sizeof(uint8_t));
-        fprintf(stderr, "Ligne %d sur %d\n", i, height);
+        // fprintf(stderr, "Ligne %d sur %d\n", i, height);
         // Génération des rayons de manière uniforme sur l'aire donnée
         for (int j = 0; j < width; j++){
             r.origin = s->camera.origin;
@@ -267,7 +267,7 @@ uint8_t** render_scene(scene* s, int width, int height, double horizontal_fov, i
                 }
 
                 // constante de la distribution de diffusion, on considère que le ciel diffuse en cos^e
-                double e = 3;
+                double e = 1;
                 total += pow(lum, e);
                 
                 // Libération de la mémoire
@@ -276,7 +276,7 @@ uint8_t** render_scene(scene* s, int width, int height, double horizontal_fov, i
                 }
                 free(path);
             }
-            pixels[i][j] = (uint8_t) (total / rays_per_pixel * 255 * 10);
+            pixels[i][j] = (uint8_t) (total / rays_per_pixel * 255);
         }
     }
     return pixels;

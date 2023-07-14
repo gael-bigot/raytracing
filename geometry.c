@@ -74,8 +74,6 @@ vector* intersect(ray* r, triangle* t){
     k = ( (a|n) - (A|n) ) / (u|n)
     Le cas (u|n) = 0 (rayon tangent au plan) renverra NULL sans autre forme de procès
     */
-
-
     double s = dot_product(r->direction, t->n);
 
     if (0 == s){
@@ -175,11 +173,11 @@ ray* diffuse_solid(ray* r, triangle* t){
     double phi, theta;
 
     // phi est choisi uniformément entre 0 et 2Pi
-    phi = (double) rand() / RAND_MAX * 2 * M_PI;
+    phi = (double) rand()/RAND_MAX * 2*M_PI;
     // theta est choisi entre 0 et PI/2 suivant la loi de Lambert
     theta = asin((double) rand()/RAND_MAX);
 
-    res->direction = vector_sum(scal_product(e1, cos(theta)), vector_sum(scal_product(e2, cos(phi)), scal_product(e3, sin(phi))));    
+    res->direction = vector_sum(scal_product(e1, cos(theta)), vector_sum(scal_product(e2, sin(theta)*cos(phi)), scal_product(e3, sin(theta)*sin(phi))));    
     free(p);
 
     return res;
@@ -187,7 +185,7 @@ ray* diffuse_solid(ray* r, triangle* t){
 
 ray* diffuse_translucent(ray* r, triangle* t){
     /* Code identique à diffuse_solid, à la différence que le rayon réfléchi
-    n'a pas de contrainte pour la direcion */
+    n'a pas de contrainte pour la direction */
     vector* p = intersect(r, t);
 
     if (NULL == p){
@@ -198,8 +196,24 @@ ray* diffuse_translucent(ray* r, triangle* t){
 
     res->origin = *p;
 
-    res->direction = random_vect();
+    vector e1, e2, e3;
 
+    /* on crée une base adaptée au plan du triangle
+    le vecteur e1 est normal au triangle, dans une direction aléatoire (multiplication de n par 1 ou -1) */
+    e1 = scal_product(t->n, (rand()%2)*2-1);
+    // on crée un vecteur normal à e1 grâce à un produit vectoriel avec un vecteur aléatoire
+    e2 = normalize(cross_product(e1, random_vect()));
+    // le troisième vecteur est obtenu par produit vectoriel entre les deux précédents
+    e3 = cross_product(e1, e2);
+
+    double phi, theta;
+
+    // phi est choisi uniformément entre 0 et 2Pi
+    phi = (double) rand() / RAND_MAX * 2 * M_PI;
+    // theta est choisi entre 0 et PI/2 suivant la loi de Lambert
+    theta = asin((double) rand()/RAND_MAX);
+
+    res->direction = vector_sum(scal_product(e1, cos(theta)), vector_sum(scal_product(e2, sin(theta)*cos(phi)), scal_product(e3, sin(theta)*sin(phi))));    
     free(p);
 
     return res;

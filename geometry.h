@@ -20,7 +20,6 @@ typedef struct triangle_s{
     double trans_diff_coeff;
 } triangle;
 
-
 /* Type représentant un rayon sous la forme d'une demi droite (origine et vecteur drecteur) */
 typedef struct ray_s{
     vector origin;
@@ -67,6 +66,5 @@ ray* diffuse_solid(ray* r, triangle* t);
 
 /* Renvoie en cas de collision un rayon réfléchi dans une direction aléatoire */
 ray* diffuse_translucent(ray* r, triangle* t);
-
 
 #endif
