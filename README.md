@@ -14,4 +14,4 @@ Render .obj:
 Unfortunately the camera position and lighting angle are hard-coded but I can't bother fixing that for now
 Should be a quick fix in render.c 
 
-![donut.obj](https://github.com/gael-bigot/raytracing/imageFolder/donut.bmp)
+![donut.obj](https://github.com/gael-bigot/raytracing/blob/main/imageFolder/donut.bmp)
